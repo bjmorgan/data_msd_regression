@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "msd_regression"
+version = "0.1.0"
+description = "MSD regression analysis comparing OLS, WLS, and GLS methods"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy",
+    "scipy",
+    "pandas",
+    "matplotlib",
+    "joblib",
+    "statsmodels",
+    "tqdm",
+    "figure_formatting",
+]
+
+[project.optional-dependencies]
+dev = [
+    "jupyter",
+    "ipython",
+]
+
+[tool.setuptools]
+packages = ["msd_analysis"]
