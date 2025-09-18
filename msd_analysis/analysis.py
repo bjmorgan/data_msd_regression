@@ -35,9 +35,8 @@ def analyze_condition(n_steps: int, max_lag: int, n_simulations: int,
     msd_array = np.array([msd for _, msd in msd_results])
     
     # Calculate statistics for WLS and GLS
-    var_msd = np.var(msd_array, axis=0, ddof=1)
-    weights = 1.0 / np.maximum(var_msd, 1e-10)
     cov_matrix = np.cov(msd_array, rowvar=False, ddof=1)
+    var_msd = np.diag(cov_matrix)
     
     # Fit all methods
     d_ols = []
@@ -47,7 +46,7 @@ def analyze_condition(n_steps: int, max_lag: int, n_simulations: int,
     
     for _, msd in msd_results:
         d_ols.append(fit_ols(lags, msd))
-        d_wls.append(fit_wls(lags, msd, weights))
+        d_wls.append(fit_wls(lags, msd, var_msd))
         d_wls_sqrtlag.append(fit_wls_sqrtlag(lags, msd))
         d_gls.append(fit_gls(lags, msd, cov_matrix))
     

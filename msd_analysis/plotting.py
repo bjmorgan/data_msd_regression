@@ -87,7 +87,7 @@ def add_scaling_guide(
     """
     x_theory = np.array(x_range)
     y_theory = y_scale * (256 / x_theory**(-exponent))
-    ax.loglog(x_theory, y_theory, 'k-', alpha=0.5)
+    ax.loglog(x_theory, y_theory, 'k-', alpha=0.5, base=2)
     
     if label:
         # Center in log space
@@ -203,6 +203,7 @@ def plot_data_if_exists(
                  linewidth=kwargs.pop('linewidth', 1),
                  markersize=kwargs.pop('markersize', 2),
                  alpha=kwargs.pop('alpha', 0.8),
+                 base=2,
                  **kwargs)
 
 
