@@ -6,20 +6,19 @@ from statsmodels.stats.correlation_tools import cov_nearest
 
 def generate_3d_random_walk_ensemble(n_steps: int, n_particles: int) -> np.ndarray:
     """Generate ensemble of 3D random walks on cubic lattice."""
-    seed = np.random.RandomState()
-    possible_moves = np.zeros((6, 3))
-    j = 0
-    for i in range(0, 6, 2):
-        possible_moves[i, j] = 2.4494897428
-        possible_moves[i + 1, j] = -2.4494897428
-        j += 1
-    choices = seed.choice(len(range(len(possible_moves))), size=(n_particles, n_steps))
-    steps = np.zeros((n_particles, n_steps, 3))
-    for i in range(steps.shape[0]):
-        for j in range(steps.shape[1]):
-            steps[i, j] = possible_moves[choices[i, j]]
-    cum_steps = np.cumsum(steps, axis=1) 
-    return cum_steps
+    step_choices = np.array([
+        [1, 0, 0], [-1, 0, 0],  # ±x
+        [0, 1, 0], [0, -1, 0],  # ±y
+        [0, 0, 1], [0, 0, -1]   # ±z
+    ]) * np.sqrt(6)
+    
+    step_indices = np.random.randint(0, 6, size=(n_particles, n_steps))
+    steps = step_choices[step_indices]
+    
+    positions = np.zeros((n_particles, n_steps + 1, 3))
+    positions[:, 1:, :] = np.cumsum(steps, axis=1)
+    
+    return positions
 
 def calculate_msd_with_time_avg(positions: np.ndarray, max_lag: int) -> tuple:
     """Calculate MSD with ensemble and time-origin averaging."""
@@ -32,11 +31,8 @@ def calculate_msd_with_time_avg(positions: np.ndarray, max_lag: int) -> tuple:
     
     for i, lag in enumerate(lags):
         n_origins = n_steps - lag + 1
-        displacements = np.concatenate([positions[:, np.newaxis, i],
-                                        np.subtract(positions[:, lag:], positions[:, :n_origins])],
-                                        axis=1)
-        squared_displacements = np.sum(displacements**2, axis=-1)
-        msd[i] = np.mean(squared_displacements)
+        diff = positions[:, lag:, :] - positions[:, :n_origins, :]
+        msd[i] = np.einsum('ijk,ijk->', diff, diff) / (n_particles * n_origins)
     
     return lags, msd
 
@@ -47,36 +43,40 @@ def calculate_msd_no_time_avg(positions: np.ndarray, max_lag: int) -> tuple:
     max_lag = min(max_lag, n_steps)
     
     lags = np.arange(1, max_lag + 1)
-    msd = np.zeros(max_lag)
     
-    for i, lag in enumerate(lags):
-        displacements = positions[:, lag, :] - positions[:, 0, :]
-        squared_displacements = np.sum(displacements**2, axis=-1)
-        msd[i] = np.mean(squared_displacements)
+    displacements = positions[:, lags, :] - positions[:, 0:1, :]
+    squared_displacements = np.sum(displacements**2, axis=2).T
+    msd = np.mean(squared_displacements, axis=1)
     
     return lags, msd
 
-def fit_ols(lags: np.ndarray, msd: np.ndarray) -> float:
-    """Ordinary least squares regression."""
-    X = np.array([np.ones(lags.size), lags]).T
-    Y = msd.T
-    return (np.linalg.pinv(X.T @ X) @ X.T @ Y)[1] / 6
-
-def fit_wls(lags: np.ndarray, msd: np.ndarray, variance: np.ndarray) -> float:
-    """Weighted least squares regression with provided weights."""
+def fit_generalized_vectorized(
+    lags: np.ndarray,
+    msd_matrix: np.ndarray,
+    W: np.ndarray) -> np.ndarray:
+    """
+    Universal fitting function for all methods.
+    
+    Calculates inv(X.T @ W @ X) @ X.T @ W @ Y) / 6
+    
+    Args:
+        lags: Time lags, shape (n_lags,)
+        msd_matrix: Multiple MSDs, shape (n_lags, n_trajectories)
+        W: Weight matrix, shape (n_lags, n_lags)
+           - Identity matrix → OLS
+           - pinv(diag(var(MSD))) → WLS
+           - pinv(covar(MSD)) → GLS
+    
+    Returns:
+        Diffusion coefficients, shape (n_trajectories,)
+    """
     X = np.column_stack([np.ones_like(lags), lags])
-    Y = msd.T
-    W = np.linalg.pinv(np.diag(variance))
-    return (np.linalg.pinv(X.T @ W @ X) @ X.T @ W @ Y)[1] / 6
-
-def fit_wls_sqrtlag(lags: np.ndarray, msd: np.ndarray) -> float:
-    """WLS using 1/sqrt(lag) weights (incorrect but commonly used)."""
-    weights = np.sqrt(lags)
-    return fit_wls(lags, msd, weights)
-
-def fit_gls(lags: np.ndarray, msd: np.ndarray, cov_matrix: np.ndarray) -> float:
-    """Generalized least squares regression."""
-    X = np.column_stack([np.ones_like(lags), lags])
-    Y = msd.T
-    W = np.linalg.pinv(cov_matrix)
-    return (np.linalg.pinv(X.T @ W @ X) @ X.T @ W @ Y)[1] / 6
+    
+    # Compute regression matrix
+    XtW = X.T @ W
+    regression_matrix = np.linalg.pinv(XtW @ X) @ XtW
+    
+    # Apply to all MSDs at once
+    coefficients = regression_matrix @ msd_matrix
+    
+    return coefficients[1, :] / 6

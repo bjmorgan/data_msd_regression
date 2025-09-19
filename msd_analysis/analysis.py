@@ -9,7 +9,7 @@ from .core import (
     generate_3d_random_walk_ensemble,
     calculate_msd_with_time_avg,
     calculate_msd_no_time_avg,
-    fit_ols, fit_wls, fit_wls_sqrtlag, fit_gls
+    fit_generalized_vectorized
 )
 from .utils import RegressionResult
 
@@ -32,32 +32,28 @@ def analyze_condition(n_steps: int, max_lag: int, n_simulations: int,
     )
     
     lags = msd_results[0][0]
-    msd_array = np.array([msd for _, msd in msd_results])
+    msd_matrix = np.array([msd for _, msd in msd_results]).T
     
-    # Calculate statistics for WLS and GLS
-    cov_matrix = np.cov(msd_array, rowvar=False, ddof=1)
-    var_msd = np.diag(cov_matrix)
+    # Calculate weight matrices for each regression method
+    cov_matrix = np.cov(msd_matrix, ddof=1)
+    W_ols = np.eye(len(lags))
+    W_wls = np.linalg.pinv(np.diag(np.diag(cov_matrix)))
+    W_wls_sqrt = np.diag(1.0 / np.sqrt(lags))
+    W_gls = np.linalg.pinv(cov_matrix)
     
-    # Fit all methods
-    d_ols = []
-    d_wls = []
-    d_wls_sqrtlag = []
-    d_gls = []
-    
-    for _, msd in msd_results:
-        d_ols.append(fit_ols(lags, msd))
-        d_wls.append(fit_wls(lags, msd, var_msd))
-        d_wls_sqrtlag.append(fit_wls_sqrtlag(lags, msd))
-        d_gls.append(fit_gls(lags, msd, cov_matrix))
+    d_ols = fit_generalized_vectorized(lags, msd_matrix, W_ols)
+    d_wls = fit_generalized_vectorized(lags, msd_matrix, W_wls)
+    d_wls_sqrtlag = fit_generalized_vectorized(lags, msd_matrix, W_wls_sqrt)
+    d_gls = fit_generalized_vectorized(lags, msd_matrix, W_gls)
     
     return {
-        'ols': RegressionResult('OLS', np.array(d_ols), n_steps, max_lag, 
+        'ols': RegressionResult('OLS', d_ols, n_steps, max_lag, 
                                time_average, n_particles, n_simulations),
-        'wls': RegressionResult('WLS', np.array(d_wls), n_steps, max_lag, 
+        'wls': RegressionResult('WLS', d_wls, n_steps, max_lag, 
                                time_average, n_particles, n_simulations),
-        'wls_sqrtlag': RegressionResult('WLS-SqrtLag', np.array(d_wls_sqrtlag), n_steps, max_lag, 
+        'wls_sqrtlag': RegressionResult('WLS-SqrtLag', d_wls_sqrtlag, n_steps, max_lag, 
                                         time_average, n_particles, n_simulations),
-        'gls': RegressionResult('GLS', np.array(d_gls), n_steps, max_lag, 
+        'gls': RegressionResult('GLS', d_gls, n_steps, max_lag, 
                                time_average, n_particles, n_simulations)
     }
 

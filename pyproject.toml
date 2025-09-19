@@ -4,17 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "msd_regression"
-version = "0.1.0"
+version = "0.2.0"
 description = "MSD regression analysis comparing OLS, WLS, and GLS methods"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
     "numpy",
-    "scipy",
     "pandas",
     "matplotlib",
     "joblib",
-    "statsmodels",
     "tqdm",
     "figure_formatting @ git+https://github.com/bjmorgan/figure_formatting.git",
 ]
