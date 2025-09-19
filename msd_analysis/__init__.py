@@ -18,7 +18,8 @@ from .plotting import (
     plot_ols_vs_wls_sqrtlag,
     plot_wls_comparison,
     plot_comprehensive_wls_comparison,
-    plot_methods_single_panel
+    plot_methods_single_panel,
+    plot_ols_comparison
 )
 
 from .utils import (
