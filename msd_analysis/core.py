@@ -1,8 +1,6 @@
 """Core simulation and regression functions."""
 
 import numpy as np
-from scipy import stats
-from statsmodels.stats.correlation_tools import cov_nearest
 
 def generate_3d_random_walk_ensemble(n_steps: int, n_particles: int) -> np.ndarray:
     """Generate ensemble of 3D random walks on cubic lattice."""
@@ -51,46 +49,6 @@ def calculate_msd_no_time_avg(positions: np.ndarray, max_lag: int) -> tuple:
     
     return lags, msd
 
-# def fit_ols(lags: np.ndarray, msd: np.ndarray) -> float:
-    # """Ordinary least squares regression."""
-    # slope, _, _, _, _ = stats.linregress(lags, msd)
-    # return slope / 6
-# 
-# def fit_wls(lags: np.ndarray, msd: np.ndarray, variance: np.ndarray) -> float:
-    # """Weighted least squares regression with provided weights."""
-    # X = np.column_stack([np.ones_like(lags), lags])
-    # Y = msd.T
-    # W = np.linalg.pinv(np.diag(variance))
-    # return (np.linalg.pinv(X.T @ W @ X) @ X.T @ W @ Y)[1] / 6
-# 
-# def fit_wls_sqrtlag(lags: np.ndarray, msd: np.ndarray) -> float:
-    # """WLS using 1/sqrt(lag) weights (incorrect but commonly used)."""
-    # weights = np.sqrt(lags)
-    # return fit_wls(lags, msd, weights)
-# 
-# def fit_gls(lags: np.ndarray, msd: np.ndarray, cov_matrix: np.ndarray) -> float:
-    # """Generalized least squares regression."""
-    # X = np.column_stack([np.ones_like(lags), lags])
-    # Y = msd.T
-    # W = np.linalg.pinv(cov_matrix)
-    # return (np.linalg.pinv(X.T @ W @ X) @ X.T @ W @ Y)[1] / 6
-    
-def fit_generalized(lags: np.ndarray, msd: np.ndarray, W: np.ndarray) -> float:
-    """
-    Universal fitting function for all methods.
-    
-    Args:
-        lags: Time lags
-        msd: Mean squared displacement
-        W: Weight matrix:
-           - Identity matrix → OLS
-           - pinv(diag(variance)) → WLS
-           - pinv(covariance) → GLS
-    """
-    X = np.column_stack([np.ones_like(lags), lags])
-    Y = msd.T
-    return (np.linalg.pinv(X.T @ W @ X) @ X.T @ W @ Y)[1] / 6
-
 def fit_generalized_vectorized(
     lags: np.ndarray,
     msd_matrix: np.ndarray,
@@ -98,10 +56,15 @@ def fit_generalized_vectorized(
     """
     Universal fitting function for all methods.
     
+    Calculates inv(X.T @ W @ X) @ X.T @ W @ Y) / 6
+    
     Args:
         lags: Time lags, shape (n_lags,)
         msd_matrix: Multiple MSDs, shape (n_lags, n_trajectories)
         W: Weight matrix, shape (n_lags, n_lags)
+           - Identity matrix → OLS
+           - pinv(diag(var(MSD))) → WLS
+           - pinv(covar(MSD)) → GLS
     
     Returns:
         Diffusion coefficients, shape (n_trajectories,)

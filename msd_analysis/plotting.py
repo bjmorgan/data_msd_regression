@@ -225,10 +225,10 @@ def plot_all_methods(
     
     # Method configurations: (method, title, scaling_guides)
     methods = [
-        ('OLS', '(a) OLS', [([48, 362], 3e-4, -1.0, r'$N^{-1}$', 0.0, -0.3)]),
-        ('WLS', '(b) WLS', [([48, 362], 0.6e-4, -1.0, r'$N^{-1}$', 0.0, -0.3),
-                            ([90, 362], 0.3e-4, -0.5, r'$N^{-0.5}$', 0.2, 0.1)]),
-        ('GLS', '(c) GLS', [([48, 362], 2.2e-5, -1.0, r'$N^{-1}$', 0.0, -0.3)])
+        ('OLS', '(a) OLS', [([48, 362], 1.4e-4, -1.0, r'$N^{-1}$', -0.05, -0.4)]),
+        ('WLS', '(b) WLS', [([48, 362], 0.8e-4, -1.0, r'$N^{-1}$', -0.05, -0.4),
+                            ([69, 512], 0.6e-4, -0.5, r'$N^{-0.5}$', 0.2, 0.2)]),
+        ('GLS', '(c) GLS', [([48, 362], 2.2e-5, -1.0, r'$N^{-1}$', -0.05, -0.4)])
     ]
     
     for idx, ((method, title, scaling_guides), ax) in enumerate(zip(methods, axes)):
@@ -434,9 +434,9 @@ def plot_methods_single_panel(
     
     # Plot configurations: (method, marker, color, label)
     plot_configs = [
-        ('OLS', 'o-', colors[0], 'OLS', ([48, 362], 3.8e-5, 0.0, r'$N^{0}$', 0.0, +0.1)),
-        ('WLS', 's-', colors[1], 'WLS', ([48, 362], 3.2e-5, -0.5, r'$N^{-0.5}$', +0.1, +0.15)),
-        ('GLS', '^-', colors[2], 'GLS', ([48, 362], 2e-5, -1.0, r'$N^{-1}$', -0.1, -0.5))
+        ('OLS', 'o-', colors[0], 'OLS', ([48, 362], 3.8e-5, 0.0, r'$N^{0}$', 0.0, +0.15)),
+        ('WLS', 's-', colors[1], 'WLS', ([96, 750], 3.3e-5, -0.37, r'$N^{-0.5}$', +0.1, +0.16)),
+        ('GLS', '^-', colors[2], 'GLS', ([48, 362], 2e-5, -1.0, r'$N^{-1}$', -0.1, -0.6))
     ]
     
     for method, marker, color, label, scaling_guide_params in plot_configs:

@@ -1,8 +1,6 @@
 numpy
-scipy
 pandas
 matplotlib
 joblib
-statsmodels
 tqdm
 figure_formatting @ git+https://github.com/bjmorgan/figure_formatting.git

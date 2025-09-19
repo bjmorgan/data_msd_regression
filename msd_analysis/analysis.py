@@ -9,8 +9,7 @@ from .core import (
     generate_3d_random_walk_ensemble,
     calculate_msd_with_time_avg,
     calculate_msd_no_time_avg,
-    # fit_ols, fit_wls, fit_wls_sqrtlag, fit_gls,
-    fit_generalized, fit_generalized_vectorized
+    fit_generalized_vectorized
 )
 from .utils import RegressionResult
 
@@ -33,11 +32,10 @@ def analyze_condition(n_steps: int, max_lag: int, n_simulations: int,
     )
     
     lags = msd_results[0][0]
-    msd_array = np.array([msd for _, msd in msd_results])
-    msd_matrix = np.array(msd_array).T
+    msd_matrix = np.array([msd for _, msd in msd_results]).T
     
     # Calculate weight matrices for each regression method
-    cov_matrix = np.cov(msd_array, rowvar=False, ddof=1)
+    cov_matrix = np.cov(msd_matrix, ddof=1)
     W_ols = np.eye(len(lags))
     W_wls = np.linalg.pinv(np.diag(np.diag(cov_matrix)))
     W_wls_sqrt = np.diag(1.0 / np.sqrt(lags))
