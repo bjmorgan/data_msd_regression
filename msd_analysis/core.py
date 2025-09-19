@@ -1,6 +1,8 @@
 """Core simulation and regression functions."""
 
 import numpy as np
+from scipy import stats
+from statsmodels.stats.correlation_tools import cov_nearest
 
 def generate_3d_random_walk_ensemble(n_steps: int, n_particles: int) -> np.ndarray:
     """Generate ensemble of 3D random walks on cubic lattice."""
@@ -10,7 +12,6 @@ def generate_3d_random_walk_ensemble(n_steps: int, n_particles: int) -> np.ndarr
         [0, 0, 1], [0, 0, -1]   # ±z
     ]) * np.sqrt(6)
     
-    # Generate all random steps at once - no loop needed!
     step_indices = np.random.randint(0, 6, size=(n_particles, n_steps))
     steps = step_choices[step_indices]
     
