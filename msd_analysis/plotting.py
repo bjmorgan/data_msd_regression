@@ -87,7 +87,7 @@ def add_scaling_guide(
     """
     x_theory = np.array(x_range)
     y_theory = y_scale * (256 / x_theory**(-exponent))
-    ax.loglog(x_theory, y_theory, 'k-', alpha=0.5, base=2)
+    ax.loglog(x_theory, y_theory, 'k-', alpha=0.5)
     
     if label:
         # Center in log space
@@ -203,7 +203,6 @@ def plot_data_if_exists(
                  linewidth=kwargs.pop('linewidth', 1),
                  markersize=kwargs.pop('markersize', 2),
                  alpha=kwargs.pop('alpha', 0.8),
-                 base=2,
                  **kwargs)
 
 
@@ -452,6 +451,39 @@ def plot_methods_single_panel(
     
     ax.set_title('Method Comparison (time-averaged, diagonal)')
     add_legend(ax, outside=True)
+    
+    plt.tight_layout()
+    return fig
+
+def plot_ols_comparison(
+    df: pd.DataFrame,
+    figsize: tuple[float, float] = (4, 2)
+) -> matplotlib.figure.Figure:
+    """Plot OLS with time-averaging and without time-averaging comparison."""
+    fig, ax = plt.subplots(1, 1, figsize=figsize)
+    
+    # Get unique values for setup
+    max_lag_values = sorted(df['max_lag'].unique())
+    colors = get_method_colors(len(max_lag_values), color_range=(0, 1))
+    
+    # Plot time-averaged OLS data
+    df_ols = filter_method_data(df, 'OLS')
+    for j, max_lag in enumerate(max_lag_values):
+        data = df_ols.query(f'max_lag == {max_lag} & time_averaged == True')
+        plot_data_if_exists(ax, data, color=colors[j], 
+                          label=f'$\\Delta t_{{\\max}}$ = {max_lag}')
+    
+    # Plot non-time-averaged OLS data as a single dataset in black
+    df_ols_no_avg = filter_method_data(df, 'OLS', time_averaged=False)
+    plot_data_if_exists(ax, df_ols_no_avg, color='black', alpha=0.7, label='No time avg.')
+    
+    # Add scaling guide (N^-1 scaling)
+    add_scaling_guide(ax, [48, 362], 1.4e-4, -1.0, r'$N^{-1}$', -0.05, -0.4)
+    
+    format_log_axis(ax, df, show_ylabel=True)
+    ax.set_title('OLS: Time-averaged vs. Single-origin')
+    
+    add_legend(ax, reverse_order=True, outside=True)
     
     plt.tight_layout()
     return fig
